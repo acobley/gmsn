@@ -18,6 +18,8 @@
 
    This version by A.Cobley
    andy@r2-dvd.org
+   * 
+ * Changed Attack calculation
 */
 
 
@@ -38,7 +40,11 @@ int SW2 = 7;
 int DACCS = 10;
 
 float alpha=0.25;
-float alphaPower=(alpha-1)/alpha;
+float attackPower=(alpha-1)/alpha;
+float delta=0.25;
+float decayPower=(delta-1)/delta;
+float release=0.25;
+float releasePower=(delta-1)/release;
 float dx=1/1024;
 
 void setup() {
@@ -65,10 +71,14 @@ void setup() {
 void GetPots(){
   aPot = map(analogRead(A3), 0, 1024, 1024, 0);
   dx=aPot/1024;
-  aCoeff = alpha*pow(enVal/4100,alphaPower)*dx;
-  dPot = map(analogRead(A2), 0, 1024, 200, 0);
+  aCoeff = alpha*pow(enVal/4100,attackPower)*dx;
+  dPot = map(analogRead(A2), 0, 1024, 1024, 0);
+  dx=dPot/1024;
+  dCoeff = alpha*pow(enVal/4100,decayPower)*dx;
   sPot = map(analogRead(A1), 0, 1024, 0, 4096);
-  rPot = map(analogRead(A0), 0, 1024, 80, 0);
+  rPot = map(analogRead(A0), 0, 1024, 1024, 0);
+  dx=rPot/1024;
+  dCoeff = alpha*pow(enVal/4100,releasePower)*dx;
 }
 
 void loop() {
@@ -95,15 +105,12 @@ void loop() {
       if (enVal == 4095) {
         rising = 0;
       }
-    } else {
-
-      
-
+    } if (enVal <=sPot){  //  Sustain
+        mcpWrite((int)enVal);
+    }
+    else {
       //else continue with decay to sustain
-
-      float dCoeff = dPot / 16384;
-
-      enVal += dCoeff * (sPot - enVal);
+      enVal += dCoeff * (-4100);
       mcpWrite((int)enVal);
     }
   }
@@ -113,21 +120,12 @@ void loop() {
 
     //Quick release label
 rlease:
-
-
-    float rCoeff = rPot / 16384;
-    enVal += rCoeff * (-100 - enVal);
+    enVal += rCoeff * (-4100);
     if (enVal < 0) {
       enVal = 0;
     }
     mcpWrite((int)enVal);
   }
-
-
-
-  delayMicroseconds(50);
-
-
   delayMicroseconds(50);
 }
 
