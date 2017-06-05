@@ -11,3 +11,7 @@ Switch in Bottom position, repeat envelope after complete.
 
 NOTE
 This is a work in progress, the code has not yet been tested ! 
+
+See: https://gmsn.co.uk/collections/pure-modular/products/gmsn-pure-adsr
+
+In order to send the program to the Arduino see: https://learn.sparkfun.com/tutorials/pocket-avr-programmer-hookup-guide
