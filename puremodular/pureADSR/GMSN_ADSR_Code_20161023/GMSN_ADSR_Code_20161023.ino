@@ -28,7 +28,7 @@
 #include "SPI.h"
 
 float aPot, aCoeff, enVal = 0, dPot, dCoeff, sPot, sCoeff, sVal, rPot, rCoeff;
-boolean gate = 0, rising = 0;
+boolean gate = 0, rising = false;
 int buttonState, lastButtonState = HIGH, loopStage = 0, x = 0;
 long lastDebounceTime = 0, debounceDelay = 500;
 int TRIGGER = 2;
@@ -39,6 +39,7 @@ int SW1 = 6;
 int SW2 = 7;
 int DACCS = 10;
 
+boolean debug = false;
 float alpha=0.25;
 float attackPower=(alpha-1)/alpha;
 float delta=0.25;
@@ -68,11 +69,17 @@ void setup() {
   flash (10, 500);
 }
 
+int ReadPort(int Port){
+  int value= 512;
+  if (debug=false)
+     map(analogRead(Port), 0, 1024, 1024, 0);
+  return value;
+}
 void GetPots(){
-  aPot = map(analogRead(A3), 0, 1024, 1024, 0);
+  aPot = ReadPort(A3);
   dx=aPot/1024;
   aCoeff = alpha*pow(enVal/4100,attackPower)*dx;
-  dPot = map(analogRead(A2), 0, 1024, 1024, 0);
+  dPot = ReadPort(A2);
   dx=dPot/1024;
   dCoeff = alpha*pow(enVal/4100,decayPower)*dx;
   sPot = map(analogRead(A1), 0, 1024, 0, 4096);
@@ -86,9 +93,6 @@ void loop() {
   
   if (rising) {
 
-    //Removed fast attack
-    //float aCoeff = aPot / 16384;
-    //enVal += aCoeff * (4311 - enVal);
     enVal+=aCoeff * 4100;
     if (enVal > 4095) {
       enVal = 4095;
@@ -100,10 +104,8 @@ void loop() {
 
     //Attack
     if (rising) {
-      mcpWrite((int)enVal);
-      //delay(5);
-      if (enVal == 4095) {
-        rising = 0;
+      if (enVal >= 4094) {
+        rising = false;
       }
     } if (enVal <=sPot){  //  Sustain
         mcpWrite((int)enVal);
@@ -126,16 +128,16 @@ rlease:
     }
     mcpWrite((int)enVal);
   }
-  delayMicroseconds(50);
+  delayMicroseconds(590);
 }
 
 
 //Interrupt routine for rising edge of Gate
 void gateOn() {
+  flash (1, 200);
   enVal = 0;
-  rising = 1;
-  loopStage = 0;
-  x = 0;
+  rising = true;
+
 }
 
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
