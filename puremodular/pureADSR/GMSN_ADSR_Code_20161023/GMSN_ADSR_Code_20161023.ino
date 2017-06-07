@@ -24,6 +24,7 @@
 
 
 #include "SPI.h"
+#include <SoftwareSerial.h>
 
 float aPot, aCoeff, enVal = 0, dPot, dCoeff, sPot, sCoeff, sVal, rPot, rCoeff;
 boolean gate = 0, rising = false;
@@ -65,11 +66,14 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
   //  Say we are alive by flashing the LED
   flash (10, 500);
+  if (debug==true){
+    Serial.begin(9600);  
+  }
 }
 
 int ReadPort(int Port){
   int value= 512;
-  if (debug=false)
+  if (debug==false)
      map(analogRead(Port), 0, 1024, 1024, 0);
   return value;
 }
@@ -156,6 +160,8 @@ void mcpWrite(int value) {
 
   // Set digital pin DACCS HIGH
   digitalWrite(DACCS, HIGH);
+  if (debug==true)
+     Serial.print(value);
 }
 
 //Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
