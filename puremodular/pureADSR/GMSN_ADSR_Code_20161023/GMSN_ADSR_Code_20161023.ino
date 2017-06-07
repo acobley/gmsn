@@ -74,7 +74,7 @@ void setup() {
 int ReadPort(int Port){
   int value= 512;
   if (debug==false)
-     map(analogRead(Port), 0, 1024, 1024, 0);
+     value=map(analogRead(Port), 0, 1024, 1024, 0);
   return value;
 }
 void GetPots(){
