@@ -81,7 +81,7 @@ void GetPots(){
   dx=dPot/1024;
   dCoeff = alpha*pow(enVal/4100,decayPower)*dx;
   sPot = map(analogRead(A1), 0, 1024, 0, 4096);
-  rPot = map(analogRead(A0), 0, 1024, 1024, 0);
+  rPot = ReadPort(A0);
   dx=rPot/1024;
   dCoeff = alpha*pow(enVal/4100,releasePower)*dx;
 }
