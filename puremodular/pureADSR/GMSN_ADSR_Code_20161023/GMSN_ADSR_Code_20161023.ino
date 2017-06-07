@@ -23,8 +23,6 @@
 */
 
 
-
-
 #include "SPI.h"
 
 float aPot, aCoeff, enVal = 0, dPot, dCoeff, sPot, sCoeff, sVal, rPot, rCoeff;
@@ -120,8 +118,6 @@ void loop() {
   // If no Gate, write release values
   else {
 
-    //Quick release label
-rlease:
     enVal += rCoeff * (-4100);
     if (enVal < 0) {
       enVal = 0;
@@ -134,7 +130,7 @@ rlease:
 
 //Interrupt routine for rising edge of Gate
 void gateOn() {
-  flash (1, 200);
+  //flash (1, 200);
   enVal = 0;
   rising = true;
 
