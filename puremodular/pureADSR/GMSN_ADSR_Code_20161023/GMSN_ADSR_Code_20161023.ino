@@ -25,8 +25,10 @@
 
 #include "SPI.h"
 #include <SoftwareSerial.h>
+#include <EEPROM.h>
 
-float aPot, aCoeff, enVal = 0, dPot, dCoeff, sPot, sCoeff, sVal, rPot, rCoeff;
+float enVal = 0;
+int aPot,dPot,sPot, rPot;
 boolean gate = 0, rising = false;
 int buttonState, lastButtonState = HIGH, loopStage = 0, x = 0;
 long lastDebounceTime = 0, debounceDelay = 500;
@@ -48,6 +50,20 @@ boolean SustainPhase=false;
 int SustainLevel=0;
 boolean finished=false;
 
+struct coeffStruct {
+  double alpha;
+  double delta;
+  double rho;
+};
+
+coeffStruct defaultcoeff ={
+  0.6d,
+  1.6d,
+  0.3
+};
+
+ int eeAddress = 0; 
+
 void setup() {
   //DAC Comms
   SPI.begin();
@@ -65,21 +81,50 @@ void setup() {
 
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
-  Serial.begin(9600);  
-    
- 
+  Serial.begin(9600); 
+  coeffStruct coeff;
+  EEPROM.get(eeAddress,coeff);  
+  if (isnan(coeff.alpha) )
+      EEPROM.put(eeAddress,defaultcoeff);
+  Serial.println(coeff.alpha);
+  boolean b=digitalRead(SW1);
+   Serial.println(b);
+   b=digitalRead(SW2);
+   Serial.println(b);
 }
 
 int ReadPort(int Port){
+ 
   int value= 512;
+   
   //if (debug==false)
-     value=map(analogRead(Port), 0, 1024, 1024, 0);
+   value=map(analogRead(Port), 0, 1024, 1024, 0);
+   
+   
   return value;
 }
-
-
+void getCoeff(){
+if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
+      int value=map(analogRead(A3), 0, 1024, 1024, 0);
+      alpha=pow((double)value/(double)512,2);
+      value=map(analogRead(A2), 0, 1024, 1024, 0);
+      delta=pow((double)value/(double)512,2);
+      value=map(analogRead(A0), 0, 1024, 1024, 0);
+      rho=pow((double)value/(double)512,2);
+      if (debug==true){
+         Serial.print("attack coeff");
+         Serial.println(alpha);
+      }
+   }
+}
 int getAttack(int i){
-  int Attackpot=ReadPort(A3);
+  int Attackpot;
+  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
+      Attackpot=ReadPort(A3);
+      aPot=Attackpot;
+  }else{
+    Attackpot=aPot;
+  }
   double max=pow(Attackpot,alpha);
   double y=pow(i,alpha);
   double env=y/max;
@@ -88,12 +133,22 @@ int getAttack(int i){
 }
 
 int getDecay(int i){
-  int Decaypot=ReadPort(A2);
+  int Decaypot;
+
+  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
+      Decaypot=ReadPort(A2);
+      SustainLevel=4*ReadPort(A1);
+      dPot=Decaypot;
+      sPot=SustainLevel;
+  }else{
+    Decaypot=dPot;
+    SustainLevel=sPot;
+  }
   double max=pow(Decaypot,delta);
   double y=pow(i,delta);
   double env=y/max;
   int iEnv=4095-4095*env;
-  SustainLevel=4*ReadPort(A1);
+  
   if (iEnv <= SustainLevel){
       iEnv=SustainLevel;
       SustainPhase=true;
@@ -103,7 +158,14 @@ int getDecay(int i){
 }
 
 int getRelease(int i){
-  int Releasepot=ReadPort(A0);
+  int Releasepot;
+
+  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
+      Releasepot=ReadPort(A0);
+      rPot=Releasepot;
+  }else{
+    Releasepot=rPot;
+  }
   double max=pow(Releasepot,rho);
   double y=pow(i,rho);
   double env=y/max;
@@ -122,7 +184,7 @@ int getRelease(int i){
 
 
 void loop() {
-
+getCoeff();
   if ((rising) and (digitalRead(GATEIN) == LOW)){ // Inverted
 
     enVal=getAttack(Time);
