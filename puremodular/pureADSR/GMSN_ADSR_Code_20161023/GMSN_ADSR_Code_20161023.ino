@@ -135,7 +135,7 @@ void loop() {
      mcpWrite((int)enVal);
   }
   if((rising) and (digitalRead(GATEIN) == HIGH)){ // Inverted
-    //The button was released before attack ended)
+    //The button was released before attack ended
     rising =false;
     Time=0;
     SustainPhase=false;
@@ -154,6 +154,7 @@ void loop() {
      }  
      mcpWrite((int)enVal);  
   }
+
 
   // If no Gate, write release values
  if (digitalRead(GATEIN) == HIGH) {
