@@ -38,14 +38,15 @@ int SW1 = 6;
 int SW2 = 7;
 int DACCS = 10;
 
-boolean debug = false;
-float alpha=0.25;
-float attackPower=(alpha-1)/alpha;
-float delta=0.25;
-float decayPower=(delta-1)/delta;
-float release=0.25;
-float releasePower=(delta-1)/release;
-float dx=1/1024;
+boolean debug = true;
+double alpha=0.6; //attack coeff
+double delta=0.6; // decar coeff
+double rho=0.6;   //release coeff
+
+int Time=0;
+boolean SustainPhase=false;
+int SustainLevel=0;
+boolean finished=false;
 
 void setup() {
   //DAC Comms
@@ -64,10 +65,10 @@ void setup() {
 
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
-  //  Say we are alive by flashing the LED
-  flash (10, 500);
+
   if (debug==true){
     Serial.begin(9600);  
+    gateOn();
   }
 }
 
@@ -77,54 +78,79 @@ int ReadPort(int Port){
      value=map(analogRead(Port), 0, 1024, 1024, 0);
   return value;
 }
-void GetPots(){
-  aPot = ReadPort(A3);
-  dx=aPot/1024;
-  aCoeff = alpha*pow(enVal/4100,attackPower)*dx;
-  dPot = ReadPort(A2);
-  dx=dPot/1024;
-  dCoeff = alpha*pow(enVal/4100,decayPower)*dx;
-  sPot = map(analogRead(A1), 0, 1024, 0, 4096);
-  rPot = ReadPort(A0);
-  dx=rPot/1024;
-  dCoeff = alpha*pow(enVal/4100,releasePower)*dx;
+
+
+int getAttack(int i){
+  int Attackpot=ReadPort(A3);
+  double max=pow(Attackpot,alpha);
+  double y=pow(i,alpha);
+  double env=y/max;
+  return 4095*env;
+  
 }
 
-void loop() {
-  GetPots();
+int getDecay(int i){
+  int Decaypot=ReadPort(A2);
+  double max=pow(Decaypot,delta);
+  double y=pow(i,delta);
+  double env=y/max;
+  int iEnv=4095-4095*env;
+  SustainLevel=4*ReadPort(A1);
+  if (iEnv <= SustainLevel){
+      iEnv=SustainLevel;
+      SustainPhase=true;
+  }
+  return iEnv;
   
-  if (rising) {
+}
 
-    enVal+=aCoeff * 4100;
-    if (enVal > 4095) {
+int getRelease(int i){
+  int Releasepot=ReadPort(A0);
+  double max=pow(Releasepot,rho);
+  double y=pow(i,rho);
+  double env=y/max;
+  int iEnv=SustainLevel-4095*env;
+  
+  if (iEnv <= 0){
+      iEnv=0;
+      finished=true;
+
+  }
+  return iEnv;
+  
+}
+
+
+
+
+void loop() {
+
+  if ((rising) and (digitalRead(GATEIN) == LOW)){ // Inverted
+
+    enVal=getAttack(Time);
+    Time++;
+    if (enVal >= 4095) {
       enVal = 4095;
+      rising =false;
+      Time=0;
     }
+     mcpWrite((int)enVal);
   }
 
-  //Check if Gate is On
-  if (digitalRead(GATEIN) == LOW) { // Inverted
-
-    //Attack
-    if (rising) {
-      if (enVal >= 4094) {
-        rising = false;
-      }
-    } if (enVal <=sPot){  //  Sustain
-        mcpWrite((int)enVal);
-    }
-    else {
-      //else continue with decay to sustain
-      enVal += dCoeff * (-4100);
-      mcpWrite((int)enVal);
-    }
+  //Check if Gate is On and not rising.  In decay/sustain phase;
+  if ((digitalRead(GATEIN) == LOW) and (rising==false)) { // Inverted
+     enVal=getDecay(Time);
+     if (SustainPhase==false)
+       Time++;
+     mcpWrite((int)enVal);  
   }
 
   // If no Gate, write release values
-  else {
-
-    enVal += rCoeff * (-4100);
-    if (enVal < 0) {
-      enVal = 0;
+ if (digitalRead(GATEIN) == HIGH) {
+    SustainPhase=false;
+    if (finished==false){
+       enVal=getRelease(Time);
+       Time++;
     }
     mcpWrite((int)enVal);
   }
@@ -135,15 +161,21 @@ void loop() {
 //Interrupt routine for rising edge of Gate
 void gateOn() {
   //flash (1, 200);
-  enVal = 0;
+  enVal = 1;
   rising = true;
-
+  Time=0;
+  SustainPhase=false;
+  finished=false;
+if (debug==true){
+     Serial.print("GateOn ");
+     Serial.println(rising);
+    }
 }
 
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
 
 void mcpWrite(int value) {
-
+  if(debug==false){
   //CS
   digitalWrite(DACCS, LOW);
 
@@ -160,8 +192,12 @@ void mcpWrite(int value) {
 
   // Set digital pin DACCS HIGH
   digitalWrite(DACCS, HIGH);
-  if (debug==true)
-     Serial.print(value);
+  }else{
+     Serial.print("Time ");
+     Serial.print(Time);
+     Serial.print(" enval ");
+     Serial.println(value);
+  }
 }
 
 //Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
