@@ -40,7 +40,7 @@ int SW1 = 6;
 int SW2 = 7;
 int DACCS = 10;
 
-boolean debug = true;
+boolean debug = false;
 double alpha=0.6; //attack coeff
 double delta=1.6; // decar coeff
 double rho=0.3;   //release coeff
@@ -98,7 +98,7 @@ int ReadPort(int Port){
   int value= 512;
    
   //if (debug==false)
-   value=map(analogRead(Port), 0, 1024, 1024, 0);
+   value=analogRead(Port);
    
    
   return value;
