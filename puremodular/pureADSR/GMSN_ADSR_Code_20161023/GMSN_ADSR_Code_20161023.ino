@@ -40,8 +40,8 @@ int DACCS = 10;
 
 boolean debug = true;
 double alpha=0.6; //attack coeff
-double delta=0.6; // decar coeff
-double rho=0.6;   //release coeff
+double delta=1.6; // decar coeff
+double rho=0.3;   //release coeff
 
 int Time=0;
 boolean SustainPhase=false;
@@ -71,7 +71,7 @@ void setup() {
 }
 
 int ReadPort(int Port){
-  int value= 128;
+  int value= 512;
   //if (debug==false)
      value=map(analogRead(Port), 0, 1024, 1024, 0);
   return value;
@@ -134,12 +134,24 @@ void loop() {
     }
      mcpWrite((int)enVal);
   }
-
+  if((rising) and (digitalRead(GATEIN) == HIGH)){ // Inverted
+    //The button was released before attack ended)
+    rising =false;
+    Time=0;
+    SustainPhase=false;
+    SustainLevel=enVal; //Make it the same as the last attack value;
+  }
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if ((digitalRead(GATEIN) == LOW) and (rising==false)) { // Inverted
-     enVal=getDecay(Time);
-     if (SustainPhase==false)
+     
+     if (SustainPhase==false){
+       enVal=getDecay(Time);
        Time++;
+     }
+     else{
+       Time=0;
+       enVal=SustainLevel;
+     }  
      mcpWrite((int)enVal);  
   }
 
@@ -149,6 +161,10 @@ void loop() {
     if (finished==false){
        enVal=getRelease(Time);
        Time++;
+    }
+    else 
+    { 
+      Time=0;
     }
     mcpWrite((int)enVal);
   }
@@ -189,10 +205,15 @@ void mcpWrite(int value) {
   // Set digital pin DACCS HIGH
   digitalWrite(DACCS, HIGH);
   }else{
-     Serial.print("Time ");
+    if (value >0){
+     Serial.print("Sustain Level ");
+     Serial.print(SustainLevel); 
+     Serial.print(" Time ");
      Serial.print(Time);
      Serial.print(" enval ");
      Serial.println(value);
+     
+    }
   }
 }
 
