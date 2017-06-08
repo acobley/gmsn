@@ -65,16 +65,14 @@ void setup() {
 
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
-
-  if (debug==true){
-    Serial.begin(9600);  
-    gateOn();
-  }
+  Serial.begin(9600);  
+    
+ 
 }
 
 int ReadPort(int Port){
-  int value= 512;
-  if (debug==false)
+  int value= 128;
+  //if (debug==false)
      value=map(analogRead(Port), 0, 1024, 1024, 0);
   return value;
 }
@@ -166,10 +164,8 @@ void gateOn() {
   Time=0;
   SustainPhase=false;
   finished=false;
-if (debug==true){
      Serial.print("GateOn ");
      Serial.println(rising);
-    }
 }
 
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
