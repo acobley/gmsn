@@ -94,7 +94,7 @@ void setup() {
     delta=coeff.delta;
     rho=coeff.rho;    
   }
-
+  finished=true;
 }
 
 void SaveEEProm(){
@@ -119,7 +119,7 @@ int ReadPort(int Port){
   return value;
 }
 void getCoeff(){
-if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
+if ((digitalRead(SW1) ==true) and (digitalRead(SW2) ==false) ){ //Switch bottom position
       int value=map(analogRead(A3), 0, 1024, 1024, 0);
       alpha=pow((double)value/(double)512,2);
       value=map(analogRead(A2), 0, 1024, 1024, 0);
@@ -200,6 +200,11 @@ int getRelease(int i){
 
 void loop() {
 getCoeff();
+      if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) and finished==true){
+        //Looping!
+        gateOn();
+      
+      }
   if ((rising) and (digitalRead(GATEIN) == LOW)){ // Inverted
 
     enVal=getAttack(Time);
@@ -243,6 +248,7 @@ getCoeff();
     else 
     { 
       Time=0;
+
     }
     mcpWrite((int)enVal);
   }
