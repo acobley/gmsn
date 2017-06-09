@@ -81,18 +81,33 @@ void setup() {
 
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
-  Serial.begin(9600); 
+    attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, FALLING); //Actually on rising, the gate is inverted.
+  if (debug ==true){
+     Serial.begin(9600); 
+  }
   coeffStruct coeff;
   EEPROM.get(eeAddress,coeff);  
   if (isnan(coeff.alpha) )
       EEPROM.put(eeAddress,defaultcoeff);
-  Serial.println(coeff.alpha);
-  boolean b=digitalRead(SW1);
-   Serial.println(b);
-   b=digitalRead(SW2);
-   Serial.println(b);
+  else{
+    alpha=coeff.alpha;
+    delta=coeff.delta;
+    rho=coeff.rho;    
+  }
+
 }
 
+void SaveEEProm(){
+  if (debug==true){
+    Serial.println("Save to EEprom");
+  }
+   coeffStruct coeff;
+   coeff.alpha=alpha;
+   coeff.delta=delta;
+   coeff.rho=rho;
+   EEPROM.put(eeAddress,coeff);
+   
+}
 int ReadPort(int Port){
  
   int value= 512;
@@ -112,8 +127,8 @@ if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       value=map(analogRead(A0), 0, 1024, 1024, 0);
       rho=pow((double)value/(double)512,2);
       if (debug==true){
-         Serial.print("attack coeff");
-         Serial.println(alpha);
+         //Serial.print("attack coeff");
+         //Serial.println(alpha);
       }
    }
 }
@@ -243,8 +258,10 @@ void gateOn() {
   Time=0;
   SustainPhase=false;
   finished=false;
+  if (debug==true){
      Serial.print("GateOn ");
      Serial.println(rising);
+  }
 }
 
 //Function for writing value to DAC. 0 = Off 4095 = Full on.

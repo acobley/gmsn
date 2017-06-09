@@ -9,8 +9,15 @@ Switch in upper position, knobs control time for curve to complete
 Switch in middle position, exp/lin/Log amout, Sustain works as hold, 0 hold on left, gated hold fully right
 Switch in Bottom position, repeat envelope after complete.
 
+Pressing the front switch will save the envlope slope coefficients to EEPROM
+
 NOTE
-This is a work in progress, the code has not yet been tested ! 
+TAG 0.95  Save to EEPROM
+TAG 0.91  First Working release
+
+To Be Completed
+Sustain does not yet work as a hold.
+
 
 See: https://gmsn.co.uk/collections/pure-modular/products/gmsn-pure-adsr
 
