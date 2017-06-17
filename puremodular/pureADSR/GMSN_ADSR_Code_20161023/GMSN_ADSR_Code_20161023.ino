@@ -43,7 +43,7 @@ int DACCS = 10;
 boolean debug = false;
 double alpha=0.6; //attack coeff
 double delta=1.6; // decar coeff
-int SusLen=0;
+int SusLen=0; //Amount of time to sustain, 0= gated
 double rho=0.3;   //release coeff
 
 int Time=0;
@@ -145,7 +145,7 @@ if ((digitalRead(SW1) ==true) and (digitalRead(SW2) ==false) ){ //Switch bottom 
 int getAttack(int i){
   int Attackpot;
   if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Attackpot=ReadPort(A3);
+      Attackpot=ReadPort(A3)+1;
       aPot=Attackpot;
   }else{
     Attackpot=aPot;
