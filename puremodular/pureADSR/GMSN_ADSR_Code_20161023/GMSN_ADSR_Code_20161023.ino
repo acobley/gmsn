@@ -43,22 +43,28 @@ int DACCS = 10;
 boolean debug = false;
 double alpha=0.6; //attack coeff
 double delta=1.6; // decar coeff
+int SusLen=0;
 double rho=0.3;   //release coeff
 
 int Time=0;
 boolean SustainPhase=false;
 int SustainLevel=0;
+int SustainTime; //Used for timed sustains.
 boolean finished=false;
+boolean looping=false;
+boolean ignoreGate=false;
 
 struct coeffStruct {
   double alpha;
   double delta;
+  int SusLen;
   double rho;
 };
 
 coeffStruct defaultcoeff ={
   0.6d,
   1.6d,
+  0,
   0.3
 };
 
@@ -86,12 +92,14 @@ void setup() {
      Serial.begin(9600); 
   }
   coeffStruct coeff;
+
   EEPROM.get(eeAddress,coeff);  
-  if (isnan(coeff.alpha) )
+  if (isnan(coeff.SusLen) )
       EEPROM.put(eeAddress,defaultcoeff);
   else{
     alpha=coeff.alpha;
     delta=coeff.delta;
+    SusLen=coeff.SusLen;
     rho=coeff.rho;    
   }
   finished=true;
@@ -104,6 +112,7 @@ void SaveEEProm(){
    coeffStruct coeff;
    coeff.alpha=alpha;
    coeff.delta=delta;
+   coeff.SusLen=SusLen;
    coeff.rho=rho;
    EEPROM.put(eeAddress,coeff);
    
@@ -126,6 +135,7 @@ if ((digitalRead(SW1) ==true) and (digitalRead(SW2) ==false) ){ //Switch bottom 
       delta=pow((double)value/(double)512,2);
       value=map(analogRead(A0), 0, 1024, 1024, 0);
       rho=pow((double)value/(double)512,2);
+      SusLen=ReadPort(A1);
       if (debug==true){
          //Serial.print("attack coeff");
          //Serial.println(alpha);
@@ -221,18 +231,26 @@ getCoeff();
     rising =false;
     Time=0;
     SustainPhase=false;
-    SustainLevel=enVal; //Make it the same as the last attack value;
+    SustainLevel=enVal; //Make it the same as the last attack value so release happens;
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if ((digitalRead(GATEIN) == LOW) and (rising==false)) { // Inverted
      
-     if (SustainPhase==false){
+     if (SustainPhase==false){  //Set to true in getDecay()
        enVal=getDecay(Time);
        Time++;
+       //SustainTime=0;
      }
      else{
        Time=0;
        enVal=SustainLevel;
+       /*if (SusLen>0){
+           SustainTime++;
+           
+       }
+       if ((SustainTime > SusLen) and (SusLen>0){
+           SustainPhase=false;
+       }*/
      }  
      mcpWrite((int)enVal);  
   }
@@ -252,7 +270,7 @@ getCoeff();
     }
     mcpWrite((int)enVal);
   }
-  delayMicroseconds(590);
+  delayMicroseconds(90);
 }
 
 
@@ -292,12 +310,14 @@ void mcpWrite(int value) {
   digitalWrite(DACCS, HIGH);
   }else{
     if (value >0){
+     if (debug ==true){ 
      Serial.print("Sustain Level ");
      Serial.print(SustainLevel); 
      Serial.print(" Time ");
      Serial.print(Time);
      Serial.print(" enval ");
      Serial.println(value);
+     }
      
     }
   }
