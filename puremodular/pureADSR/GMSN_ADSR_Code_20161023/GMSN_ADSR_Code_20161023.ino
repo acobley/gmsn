@@ -49,6 +49,7 @@ int Time=0;
 boolean SustainPhase=false;
 int SustainLevel=0;
 boolean finished=false;
+boolean decaying=false;
 
 struct coeffStruct {
   double alpha;
@@ -135,7 +136,7 @@ if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
 int getAttack(int i){
   int Attackpot;
   if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Attackpot=ReadPort(A3);
+      Attackpot=ReadPort(A3)+1;
       aPot=Attackpot;
   }else{
     Attackpot=aPot;
@@ -151,7 +152,7 @@ int getDecay(int i){
   int Decaypot;
 
   if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Decaypot=ReadPort(A2);
+      Decaypot=ReadPort(A2)+1;
       SustainLevel=4*ReadPort(A1);
       dPot=Decaypot;
       sPot=SustainLevel;
@@ -176,7 +177,7 @@ int getRelease(int i){
   int Releasepot;
 
   if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Releasepot=ReadPort(A0);
+      Releasepot=ReadPort(A0)+1;
       rPot=Releasepot;
   }else{
     Releasepot=rPot;
@@ -224,10 +225,13 @@ getCoeff();
      if (SustainPhase==false){
        enVal=getDecay(Time);
        Time++;
+       decaying =true;
+       SustainLevel=enVal; // In case gate goes off before end of decay, release should start at current value 
      }
      else{
        Time=0;
        enVal=SustainLevel;
+       decaying=false;
      }  
      mcpWrite((int)enVal);  
   }
@@ -235,6 +239,11 @@ getCoeff();
 
   // If no Gate, write release values
  if (digitalRead(GATEIN) == HIGH) {
+    if (decaying ==true){
+      Time=0;
+      decaying =false;
+      
+    }
     SustainPhase=false;
     if (finished==false){
        enVal=getRelease(Time);
