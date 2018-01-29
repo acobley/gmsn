@@ -1,7 +1,7 @@
 Arduino Sketch for the GMSN! Pure ADSR
 This version Andy Cobley andy@r2-dvd.org
 
-This version calcuates the slopes differently, the matsh should allow the curve to be adjusted from exponential to linear to logrithmic.
+This version calculates the slopes differently, the math should allow the curve to be adjusted from exponential to linear to logarithmic.
 
 The Plan is:
 
@@ -9,7 +9,7 @@ Switch in upper position, knobs control time for curve to complete
 Switch in middle position, exp/lin/Log amout, Sustain works as hold, 0 hold on left, gated hold fully right
 Switch in Bottom position, repeat envelope after complete.
 
-Pressing the front switch will save the envlope slope coefficients to EEPROM
+Pressing the front switch will save the envelope slope coefficients to EEPROM
 
 NOTE
 TAG 0.95  Save to EEPROM
@@ -17,7 +17,7 @@ TAG 0.91  First Working release
 
 To Be Completed
 Sustain does not yet work as a hold.
-
+Not sure if repeat works yet
 
 See: https://gmsn.co.uk/collections/pure-modular/products/gmsn-pure-adsr
 
