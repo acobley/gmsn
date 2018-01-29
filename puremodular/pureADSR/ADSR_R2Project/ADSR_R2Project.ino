@@ -202,7 +202,7 @@ int getRelease(int i){
 void loop() {
 getCoeff();
   if ((rising) and (digitalRead(GATEIN) == LOW)){ // Inverted
-
+    //Deal with Attack  Rising and GATE
     enVal=getAttack(Time);
     Time++;
     if (enVal >= 4095) {
@@ -213,7 +213,7 @@ getCoeff();
      mcpWrite((int)enVal);
   }
   if((rising) and (digitalRead(GATEIN) == HIGH)){ // Inverted
-    //The button was released before attack ended
+    //The gate was released before attack ended
     rising =false;
     Time=0;
     SustainPhase=false;
@@ -222,13 +222,13 @@ getCoeff();
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if ((digitalRead(GATEIN) == LOW) and (rising==false)) { // Inverted
      
-     if (SustainPhase==false){
+     if (SustainPhase==false){ //Decay
        enVal=getDecay(Time);
        Time++;
        decaying =true;
        SustainLevel=enVal; // In case gate goes off before end of decay, release should start at current value 
      }
-     else{
+     else{ //Sustain
        Time=0;
        enVal=SustainLevel;
        decaying=false;
@@ -239,7 +239,7 @@ getCoeff();
 
   // If no Gate, write release values
  if (digitalRead(GATEIN) == HIGH) {
-    if (decaying ==true){
+    if (decaying ==true){  //Will happen if the gate is released before the decay phase has finished.
       Time=0;
       decaying =false;
       
