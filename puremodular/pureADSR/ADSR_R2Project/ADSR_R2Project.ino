@@ -119,7 +119,7 @@ int ReadPort(int Port){
    
   return value;
 }
-void getCoeff(){
+void getCoeff(){ // get the coeficients for the slope shape
 if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       int value=map(analogRead(A3), 0, 1024, 1024, 0);
       alpha=pow((double)value/(double)512,2);
