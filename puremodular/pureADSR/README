@@ -1,6 +1,8 @@
 Arduino Sketch for the GMSN! Pure ADSR
 This version Andy Cobley andy@r2-dvd.org
 
+This version calcuates the slopes differently, the math should allow the curve to be adjusted from exponential to linear to logrithmic.
+
 Interface
 
 Switch in upper position, knobs control time for curve to complete
