@@ -45,23 +45,28 @@ int DACCS = 10;
 boolean debug = false;
 double alpha=0.6; //attack coeff
 double delta=1.6; // decar coeff
+int SusLen=0; //Amount of time to sustain, 0= gated
 double rho=0.3;   //release coeff
 
 int Time=0;
 boolean SustainPhase=false;
 int SustainLevel=0;
+int SustainTime=0; //Used for timed sustains.
+bool TimedSustain=false;
 boolean finished=false;
 boolean decaying=false;
 
 struct coeffStruct {
   double alpha;
   double delta;
+  int SusLen;
   double rho;
 };
 
 coeffStruct defaultcoeff ={
   0.6d,
   1.6d,
+  0,
   0.3
 };
 
@@ -93,6 +98,7 @@ void setup() {
   else{
     alpha=coeff.alpha;
     delta=coeff.delta;
+    SustainTime=coeff.SusLen;
     rho=coeff.rho;    
   }
 
@@ -103,6 +109,7 @@ void SaveEEProm(){
    coeffStruct coeff;
    coeff.alpha=alpha;
    coeff.delta=delta;
+   coeff.SusLen=SustainTime;
    coeff.rho=rho;
    EEPROM.put(eeAddress,coeff);
    
@@ -110,14 +117,11 @@ void SaveEEProm(){
 int ReadPort(int Port){
  
   int value= 512;
-   
-  //if (debug==false)
-   value=analogRead(Port);
-   
-   
-  return value;
+  value=analogRead(Port);
+   return value;
 }
-void getCoeff(){
+
+void getCoeff(){  //Get the coeff for envelope curve shape
 if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       int value=map(analogRead(A3), 0, 1024, 1024, 0);
       alpha=pow((double)value/(double)512,2);
@@ -125,7 +129,10 @@ if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       delta=pow((double)value/(double)512,2);
       value=map(analogRead(A0), 0, 1024, 1024, 0);
       rho=pow((double)value/(double)512,2);
-     
+      SustainTime=ReadPort(A1);
+      if (SustainTime <10){
+        TimedSustain=true;
+      }
    }
 }
 int getAttack(int i){
