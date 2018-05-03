@@ -88,6 +88,7 @@ void setup() {
   }
   coeffStruct coeff;
   EEPROM.get(eeAddress,coeff);  
+  EEPROM.put(eeAddress,defaultcoeff);
   if (isnan(coeff.alpha) )
       EEPROM.put(eeAddress,defaultcoeff);
   else{
