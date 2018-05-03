@@ -17,6 +17,8 @@ TAG 0.95  Save to EEPROM
 TAG 0.91  First Working release
 
 Branch b0.951 should match tag 0.951 (Sketch name may be wrong)
+Branch b0.955 In progress 1: Sustain time.  2: Repeat
+
 master branch is experimental
 
 To Be Completed
