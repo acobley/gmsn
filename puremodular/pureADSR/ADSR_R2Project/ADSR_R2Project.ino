@@ -19,12 +19,14 @@
    This version by A.Cobley
    andy@r2-dvd.org
    * 
-   Branch 0.951
+   Branch 0.955
+
+
+   
 */
 
 
 #include "SPI.h"
-#include <SoftwareSerial.h>
 #include <EEPROM.h>
 
 float enVal = 0;
@@ -83,9 +85,7 @@ void setup() {
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
     attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, FALLING); //Actually on rising, the gate is inverted.
-  if (debug ==true){
-     Serial.begin(9600); 
-  }
+
   coeffStruct coeff;
   EEPROM.get(eeAddress,coeff);  
   if (isnan(coeff.alpha) )
@@ -99,9 +99,7 @@ void setup() {
 }
 
 void SaveEEProm(){
-  if (debug==true){
-    Serial.println("Save to EEprom");
-  }
+
    coeffStruct coeff;
    coeff.alpha=alpha;
    coeff.delta=delta;
@@ -127,10 +125,7 @@ if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       delta=pow((double)value/(double)512,2);
       value=map(analogRead(A0), 0, 1024, 1024, 0);
       rho=pow((double)value/(double)512,2);
-      if (debug==true){
-         //Serial.print("attack coeff");
-         //Serial.println(alpha);
-      }
+     
    }
 }
 int getAttack(int i){
@@ -267,16 +262,13 @@ void gateOn() {
   Time=0;
   SustainPhase=false;
   finished=false;
-  if (debug==true){
-     Serial.print("GateOn ");
-     Serial.println(rising);
-  }
+
 }
 
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
 
 void mcpWrite(int value) {
-  if(debug==false){
+
   //CS
   digitalWrite(DACCS, LOW);
 
@@ -293,17 +285,7 @@ void mcpWrite(int value) {
 
   // Set digital pin DACCS HIGH
   digitalWrite(DACCS, HIGH);
-  }else{
-    if (value >0){
-     Serial.print("Sustain Level ");
-     Serial.print(SustainLevel); 
-     Serial.print(" Time ");
-     Serial.print(Time);
-     Serial.print(" enval ");
-     Serial.println(value);
-     
-    }
-  }
+  
 }
 
 //Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
