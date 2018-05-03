@@ -19,7 +19,7 @@
    This version by A.Cobley
    andy@r2-dvd.org
    * 
- * Changed Attack calculation
+   Branch 0.951
 */
 
 
