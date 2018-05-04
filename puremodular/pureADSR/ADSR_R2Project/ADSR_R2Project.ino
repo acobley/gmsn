@@ -51,10 +51,11 @@ double rho=0.3;   //release coeff
 int Time=0;
 boolean SustainPhase=false;
 int SustainLevel=0;
-int SustainTime=0; //Used for timed sustains.
+int SustainLength=0; //Used for timed sustains.
 bool TimedSustain=false;
 boolean finished=false;
 boolean decaying=false;
+boolean ReleasePhase=false;
 
 struct coeffStruct {
   double alpha;
@@ -98,7 +99,7 @@ void setup() {
   else{
     alpha=coeff.alpha;
     delta=coeff.delta;
-    SustainTime=coeff.SusLen;
+    SustainLength=coeff.SusLen;
     rho=coeff.rho;    
   }
 
@@ -109,7 +110,7 @@ void SaveEEProm(){
    coeffStruct coeff;
    coeff.alpha=alpha;
    coeff.delta=delta;
-   coeff.SusLen=SustainTime;
+   coeff.SusLen= SustainLength;
    coeff.rho=rho;
    EEPROM.put(eeAddress,coeff);
    
@@ -129,9 +130,13 @@ if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       delta=pow((double)value/(double)512,2);
       value=map(analogRead(A0), 0, 1024, 1024, 0);
       rho=pow((double)value/(double)512,2);
-      SustainTime=ReadPort(A1);
-      if (SustainTime <10){
+      SustainLength=ReadPort(A1);
+      if ( SustainLength <10){
+        SustainLength=0;
         TimedSustain=true;
+      }
+      else {
+         TimedSustain=false;
       }
    }
 }
@@ -170,6 +175,7 @@ int getDecay(int i){
   if (iEnv <= SustainLevel){
       iEnv=SustainLevel;
       SustainPhase=true;
+      Time=0;
   }
   return iEnv;
   
@@ -215,32 +221,47 @@ getCoeff();
      mcpWrite((int)enVal);
   }
   if((rising) and (digitalRead(GATEIN) == HIGH)){ // Inverted
-    //The button was released before attack ended
+    //The gate was released before attack ended so go into release
     rising =false;
     Time=0;
     SustainPhase=false;
     SustainLevel=enVal; //Make it the same as the last attack value;
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
-  if ((digitalRead(GATEIN) == LOW) and (rising==false)) { // Inverted
+  if ((digitalRead(GATEIN) == LOW) and (rising==false) and (ReleasePhase==false)) { // Gate in Inverted, TImed Sustain might cause a forced release.
      
      if (SustainPhase==false){
-       enVal=getDecay(Time);
+       enVal=getDecay(Time);  //Sustain = ture is in set here !
        Time++;
        decaying =true;
        SustainLevel=enVal; // In case gate goes off before end of decay, release should start at current value 
      }
      else{
-       Time=0;
+       Time++;
        enVal=SustainLevel;
        decaying=false;
      }  
      mcpWrite((int)enVal);  
   }
 
-
+/*
+ * If Sustain time is set >0;  two things can happen
+ * 1: Force release after time
+ * 2: extend release after time 
+ */
   // If no Gate, write release values
- if (digitalRead(GATEIN) == HIGH) {
+ if ((digitalRead(GATEIN) == HIGH) && (TimedSustain==false)) {
+    ReleasePhase=true;
+
+ }
+ if (TimedSustain==true){
+   if (Time >SustainLength){
+       Time=0;
+       ReleasePhase =true;
+   }
+ }
+
+ if (ReleasePhase==true){
     if (decaying ==true){
       Time=0;
       decaying =false;
@@ -254,6 +275,7 @@ getCoeff();
     else 
     { 
       Time=0;
+      ReleasePhase=false;
     }
     mcpWrite((int)enVal);
   }
@@ -269,6 +291,7 @@ void gateOn() {
   Time=0;
   SustainPhase=false;
   finished=false;
+  ReleasePhase=false;
 
 }
 
