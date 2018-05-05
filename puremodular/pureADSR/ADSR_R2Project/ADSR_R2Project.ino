@@ -68,7 +68,7 @@ coeffStruct defaultcoeff ={
   0.6d,
   1.6d,
   0,
-  0.3
+  0.3d
 };
 
  int eeAddress = 0; 
@@ -123,7 +123,8 @@ int ReadPort(int Port){
 }
 
 void getCoeff(){  //Get the coeff for envelope curve shape
-if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
+if ((digitalRead(SW1) ==true) and (digitalRead(SW2) ==false) ){
+     
       int value=map(analogRead(A3), 0, 1024, 1024, 0);
       alpha=pow((double)value/(double)512,2);
       value=map(analogRead(A2), 0, 1024, 1024, 0);
@@ -131,11 +132,12 @@ if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
       value=map(analogRead(A0), 0, 1024, 1024, 0);
       rho=pow((double)value/(double)512,2);
       SustainLength=ReadPort(A1);
-      if ( SustainLength <10){
-        SustainLength=0;
+      if ( SustainLength >10){
+        
         TimedSustain=true;
       }
       else {
+         SustainLength=0;
          TimedSustain=false;
       }
    }
@@ -249,7 +251,7 @@ getCoeff();
  * 1: Force release after time
  * 2: extend release after time 
  */
-  // If no Gate, write release values
+  // If no Gate and not in timed sustain, write release values
  if ((digitalRead(GATEIN) == HIGH) && (TimedSustain==false)) {
     ReleasePhase=true;
 
@@ -298,34 +300,27 @@ void gateOn() {
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
 
 void mcpWrite(int value) {
-
-  //CS
-  digitalWrite(DACCS, LOW);
-
-  //DAC1 write
-
   //set top 4 bits of value integer to data variable
   byte data = value >> 8;
   data = data & B00001111;
   data = data | B00110000;
+  cli();
+  //CS
+  digitalWrite(DACCS, LOW);
   SPI.transfer(data);
-
   data = value;
   SPI.transfer(data);
-
-  // Set digital pin DACCS HIGH
   digitalWrite(DACCS, HIGH);
-  
+  sei();
 }
 
 //Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
-void flash(int value, int time) {
-  int x = 0;
-  while (x < value) {
+void flash(int count, int time) {
+  for (int i = 0; i < count; i++) {
     mcpWrite(4000);
     delay(time);
     mcpWrite(0);
-    delay(200);
+    delay(100);
     x++;
   }
 }
