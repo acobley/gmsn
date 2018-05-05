@@ -276,34 +276,17 @@ void gateOn() {
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
 
 void mcpWrite(int value) {
-  if(debug==false){
-  //CS
-  digitalWrite(DACCS, LOW);
-
-  //DAC1 write
-
   //set top 4 bits of value integer to data variable
   byte data = value >> 8;
   data = data & B00001111;
   data = data | B00110000;
+  cli();
+  digitalWrite(DACCS, LOW);
   SPI.transfer(data);
-
   data = value;
   SPI.transfer(data);
-
-  // Set digital pin DACCS HIGH
   digitalWrite(DACCS, HIGH);
-  }else{
-    if (value >0){
-     Serial.print("Sustain Level ");
-     Serial.print(SustainLevel); 
-     Serial.print(" Time ");
-     Serial.print(Time);
-     Serial.print(" enval ");
-     Serial.println(value);
-     
-    }
-  }
+  sei();
 }
 
 //Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
