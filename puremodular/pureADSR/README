@@ -6,8 +6,8 @@ This version calcuates the slopes differently, the math should allow the curve t
 Interface
 
 Switch in upper position, knobs control time for curve to complete
-Switch in middle position, exp/lin/Log amout, Sustain works as hold, 0 hold on left, gated hold fully right
-Switch in Bottom position, repeat envelope after complete.
+Switch in bottom position, exp/lin/Log amount, Sustain works as hold, gated on fully left left, otherwise set time
+Switch in middle position, repeat envelope after complete.
 
 Pressing the front switch will save the envlope slope coefficients to EEPROM
 
