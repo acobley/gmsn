@@ -279,7 +279,7 @@ getCoeff();
     }
     mcpWrite((int)enVal);
   }
-  delayMicroseconds(590);
+  //delayMicroseconds(590);
 }
 
 
