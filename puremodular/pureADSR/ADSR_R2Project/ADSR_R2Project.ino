@@ -254,8 +254,10 @@ int getRelease(int i) {
 void loop() {
   getMode();
   
-  boolean GateIn = digitalRead(GATEIN);
-  if ((rising) and (GateIn == LOW)) { // Inverted
+  boolean GateIn = !digitalRead(GATEIN);
+  if ((rising) and 
+     ((GateIn == HIGH) || (TimedSustain == true))
+     ){ 
 
     enVal = getAttack(Time);
     Time++;
@@ -266,15 +268,18 @@ void loop() {
     }
     mcpWrite((int)enVal);
   }
-  if ((rising) and (GateIn == HIGH)) { // Inverted
-    //The button was released before attack ended
+  if ((rising) and 
+     ((GateIn == LOW) and  (TimedSustain == false))
+     ){ 
+    //The gate was released before attack ended
     rising = false;
     Time = 0;
     SustainPhase = false;
     SustainLevel = enVal; //Make it the same as the last attack value;
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
-  if ((GateIn == LOW) and (rising == false) and (ReleasePhase==false)) { // Inverted
+  if (((GateIn == HIGH) || (TimedSustain == true))
+      and (rising == false) and (ReleasePhase==false) and (finished==false)) { 
 
     if (SustainPhase == false) {
       enVal = getDecay(Time);
@@ -294,14 +299,16 @@ void loop() {
     mcpWrite((int)enVal);
   }
 
-  if ((GateIn == HIGH) && (TimedSustain == false)) {
+  if ((GateIn == LOW) && (TimedSustain == false)) {
     ReleasePhase = true;
+    SustainPhase=false;
 
   }
   if ((TimedSustain == true) and (SustainPhase==true)){
     if (Time > SustainLength) {
       Time = 0;
       ReleasePhase = true;
+      SustainPhase=false;
     }
   }
 
@@ -336,6 +343,7 @@ void gateOn() {
   Time = 0;
   SustainPhase = false;
   finished = false;
+  ReleasePhase=false;
 
 }
 
