@@ -169,8 +169,15 @@ int OldDecayPot = -1;
 int getDecay(int i) {
   int Decaypot;
   int readDecaypot = ReadPort(A2) + 1;
+  if (TimedSustain==false){
+    
+
   SustainLevel = 4 * ReadPort(A1);
   sPot = SustainLevel;
+    }else{
+      SustainLength=4 * ReadPort(A1);
+      SustainLevel=sPot;
+    }
   if (readDecaypot != OldDecayPot) {
 
     if (digitalRead(BUTTON) == true) {
