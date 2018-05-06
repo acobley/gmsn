@@ -165,7 +165,7 @@ int getAttack(int i) {
 }
 
 int OldDecayPot = -1;
-
+int OldSustainLevel=-1;
 int getDecay(int i) {
   int Decaypot;
   int readDecaypot = ReadPort(A2) + 1;
@@ -173,9 +173,10 @@ int getDecay(int i) {
     SustainLevel = 4 * ReadPort(A1);
     sPot = SustainLevel;
   } else {
+    
     if (digitalRead(BUTTON) == true) {
-    SustainLength = 4 * ReadPort(A1);
-    SustainLevel = sPot;
+       SustainLength = 4 * ReadPort(A1);
+       SustainLevel = sPot;
     }else{
        SustainLevel = 4 * ReadPort(A1);
        sPot = SustainLevel;
@@ -331,6 +332,9 @@ void loop() {
     {
       Time = 0;
       ReleasePhase = false;
+      if (mode==LOOP){
+        gateOn();
+      }
     }
     mcpWrite((int)enVal);
   }
