@@ -62,7 +62,7 @@ boolean decaying = false;
 boolean ReleasePhase = false;
 int SustainLength = 0; //Used for timed sustains.
 bool TimedSustain = false;
-int mode=NORMAL;
+int mode = NORMAL;
 
 struct coeffStruct {
   double alpha;
@@ -108,7 +108,7 @@ void setup() {
 }
 
 void SaveEEProm() {
-//change this to use Update
+  //change this to use Update
   coeffStruct coeff;
   coeff.alpha = alpha;
   coeff.delta = delta;
@@ -118,18 +118,18 @@ void SaveEEProm() {
 }
 
 
-int getMode(){
-  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){ //top Position
-     mode=NORMAL;
-     TimedSustain=false;
+int getMode() {
+  if ((digitalRead(SW1) == false) and (digitalRead(SW2) == true) ) { //top Position
+    mode = NORMAL;
+    TimedSustain = false;
   }
-  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){ //MIddle Position
-     mode=HOLD;
-     TimedSustain=true;
+  if ((digitalRead(SW1) == false) and (digitalRead(SW2) == false) ) { //MIddle Position
+    mode = HOLD;
+    TimedSustain = true;
   }
-  if ((digitalRead(SW1) ==true) and (digitalRead(SW2) ==false) ){ //bottom Position
-     mode=LOOP;
-     TimedSustain=true;
+  if ((digitalRead(SW1) == true) and (digitalRead(SW2) == false) ) { //bottom Position
+    mode = LOOP;
+    TimedSustain = true;
   }
 }
 
@@ -169,15 +169,18 @@ int OldDecayPot = -1;
 int getDecay(int i) {
   int Decaypot;
   int readDecaypot = ReadPort(A2) + 1;
-  if (TimedSustain==false){
-    
-
-  SustainLevel = 4 * ReadPort(A1);
-  sPot = SustainLevel;
+  if (TimedSustain == false) {
+    SustainLevel = 4 * ReadPort(A1);
+    sPot = SustainLevel;
+  } else {
+    if (digitalRead(BUTTON) == true) {
+    SustainLength = 4 * ReadPort(A1);
+    SustainLevel = sPot;
     }else{
-      SustainLength=4 * ReadPort(A1);
-      SustainLevel=sPot;
+       SustainLevel = 4 * ReadPort(A1);
+       sPot = SustainLevel;
     }
+  }
   if (readDecaypot != OldDecayPot) {
 
     if (digitalRead(BUTTON) == true) {
@@ -253,11 +256,11 @@ int getRelease(int i) {
 
 void loop() {
   getMode();
-  
+
   boolean GateIn = !digitalRead(GATEIN);
-  if ((rising) and 
-     ((GateIn == HIGH) || (TimedSustain == true))
-     ){ 
+  if ((rising) and
+      ((GateIn == HIGH) || (TimedSustain == true))
+     ) {
 
     enVal = getAttack(Time);
     Time++;
@@ -268,9 +271,9 @@ void loop() {
     }
     mcpWrite((int)enVal);
   }
-  if ((rising) and 
-     ((GateIn == LOW) and  (TimedSustain == false))
-     ){ 
+  if ((rising) and
+      ((GateIn == LOW) and  (TimedSustain == false))
+     ) {
     //The gate was released before attack ended
     rising = false;
     Time = 0;
@@ -279,7 +282,7 @@ void loop() {
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if (((GateIn == HIGH) || (TimedSustain == true))
-      and (rising == false) and (ReleasePhase==false) and (finished==false)) { 
+      and (rising == false) and (ReleasePhase == false) and (finished == false)) {
 
     if (SustainPhase == false) {
       enVal = getDecay(Time);
@@ -288,9 +291,9 @@ void loop() {
       SustainLevel = enVal; // In case gate goes off before end of decay, release should start at current value
     }
     else {
-      if (TimedSustain==false){
-      Time = 0;
-      }else{
+      if (TimedSustain == false) {
+        Time = 0;
+      } else {
         Time ++;
       }
       enVal = SustainLevel;
@@ -301,14 +304,14 @@ void loop() {
 
   if ((GateIn == LOW) && (TimedSustain == false)) {
     ReleasePhase = true;
-    SustainPhase=false;
+    SustainPhase = false;
 
   }
-  if ((TimedSustain == true) and (SustainPhase==true)){
+  if ((TimedSustain == true) and (SustainPhase == true)) {
     if (Time > SustainLength) {
       Time = 0;
       ReleasePhase = true;
-      SustainPhase=false;
+      SustainPhase = false;
     }
   }
 
@@ -343,7 +346,7 @@ void gateOn() {
   Time = 0;
   SustainPhase = false;
   finished = false;
-  ReleasePhase=false;
+  ReleasePhase = false;
 
 }
 
