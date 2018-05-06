@@ -26,6 +26,16 @@
 #include "SPI.h"
 #include <EEPROM.h>
 
+
+/*  Modes depend on the front multi way switch
+     NORMAL behaves as an ADSR
+     HOLD Sustain knob holds for a time regardless of Gate .  Hold button to change sustain level
+     LOOP will loop !
+*/
+
+#define NORMAL 0
+#define HOLD 1
+#define LOOP 3
 float enVal = 0;
 int aPot, dPot, sPot, rPot;
 boolean gate = 0, rising = false;
@@ -52,6 +62,7 @@ boolean decaying = false;
 boolean ReleasePhase = false;
 int SustainLength = 0; //Used for timed sustains.
 bool TimedSustain = false;
+int mode=NORMAL;
 
 struct coeffStruct {
   double alpha;
@@ -81,11 +92,9 @@ void setup() {
   pinMode(SW1, INPUT); //MODE SW1
   pinMode(SW2, INPUT); //MODE SW2
   digitalWrite(DACCS, HIGH);
-
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
   //attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, FALLING); //Actually on rising, the gate is inverted.
-
   coeffStruct coeff;
   EEPROM.get(eeAddress, coeff);
   if (isnan(coeff.alpha) )
@@ -99,7 +108,7 @@ void setup() {
 }
 
 void SaveEEProm() {
-
+//change this to use Update
   coeffStruct coeff;
   coeff.alpha = alpha;
   coeff.delta = delta;
@@ -107,14 +116,26 @@ void SaveEEProm() {
   EEPROM.put(eeAddress, coeff);
 
 }
+
+
+int getMode(){
+  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){ //top Position
+     mode=NORMAL;
+     TimedSustain=false;
+  }
+  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){ //MIddle Position
+     mode=HOLD;
+     TimedSustain=true;
+  }
+  if ((digitalRead(SW1) ==true) and (digitalRead(SW2) ==false) ){ //bottom Position
+     mode=LOOP;
+     TimedSustain=true;
+  }
+}
+
 int ReadPort(int Port) {
-
   int value = 512;
-
-
   value = analogRead(Port);
-
-
   return value;
 }
 
@@ -149,13 +170,13 @@ int getDecay(int i) {
   int Decaypot;
   int readDecaypot = ReadPort(A2) + 1;
   SustainLevel = 4 * ReadPort(A1);
-  sPot=SustainLevel;
+  sPot = SustainLevel;
   if (readDecaypot != OldDecayPot) {
-    
+
     if (digitalRead(BUTTON) == true) {
       Decaypot = readDecaypot;
       OldDecayPot = readDecaypot;
-      
+
     } else {
       int value = map(analogRead(A2), 0, 1024, 1024, 0);
       delta = pow((double)value / (double)512, 2);
@@ -164,7 +185,7 @@ int getDecay(int i) {
     }
   } else {
     Decaypot = OldDecayPot;
-   
+
   }
   dPot = Decaypot;
   double max = pow(Decaypot, delta);
@@ -182,14 +203,14 @@ int getDecay(int i) {
 int OldReleasePot = -1;
 int getRelease(int i) {
   /*
-  int Releasepot;
+    int Releasepot;
 
-  if ((digitalRead(SW1) == false) and (digitalRead(SW2) == true) ) {
+    if ((digitalRead(SW1) == false) and (digitalRead(SW2) == true) ) {
     Releasepot = ReadPort(A0) + 1;
     rPot = Releasepot;
-  } else {
+    } else {
     Releasepot = rPot;
-  }
+    }
   */
   int Releasepot;
   int readReleasepot = ReadPort(A0) + 1;
@@ -224,7 +245,8 @@ int getRelease(int i) {
 
 
 void loop() {
-  //getCoeff();
+  getMode();
+  
   boolean GateIn = digitalRead(GATEIN);
   if ((rising) and (GateIn == LOW)) { // Inverted
 
@@ -245,7 +267,7 @@ void loop() {
     SustainLevel = enVal; //Make it the same as the last attack value;
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
-  if ((GateIn == LOW) and (rising == false)) { // Inverted
+  if ((GateIn == LOW) and (rising == false) and (ReleasePhase==false)) { // Inverted
 
     if (SustainPhase == false) {
       enVal = getDecay(Time);
@@ -254,7 +276,11 @@ void loop() {
       SustainLevel = enVal; // In case gate goes off before end of decay, release should start at current value
     }
     else {
+      if (TimedSustain==false){
       Time = 0;
+      }else{
+        Time ++;
+      }
       enVal = SustainLevel;
       decaying = false;
     }
