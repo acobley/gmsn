@@ -64,16 +64,19 @@ int SustainLength = 0; //Used for timed sustains.
 bool TimedSustain = false;
 int mode = NORMAL;
 
+
 struct coeffStruct {
   double alpha;
   double delta;
   double rho;
+  int SusLength;
 };
 
 coeffStruct defaultcoeff = {
   0.6d,
   1.6d,
-  0.3
+  0.3,
+  500
 };
 
 int eeAddress = 0;
@@ -94,7 +97,7 @@ void setup() {
   digitalWrite(DACCS, HIGH);
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
-  //attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, FALLING); //Actually on rising, the gate is inverted.
+  attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, RISING); //Actually on rising, the gate is inverted.
   coeffStruct coeff;
   EEPROM.get(eeAddress, coeff);
   if (isnan(coeff.alpha) )
@@ -103,16 +106,21 @@ void setup() {
     alpha = coeff.alpha;
     delta = coeff.delta;
     rho = coeff.rho;
+    SustainLength=coeff.SusLength;
   }
 
 }
 
+
+
 void SaveEEProm() {
   //change this to use Update
+  flash(2,100);
   coeffStruct coeff;
   coeff.alpha = alpha;
   coeff.delta = delta;
   coeff.rho = rho;
+  coeff.SusLength=SustainLength;
   EEPROM.put(eeAddress, coeff);
 
 }
@@ -368,6 +376,7 @@ void mcpWrite(int value) {
 //Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
 void flash(int value, int time) {
   int x = 0;
+  cli();
   while (x < value) {
     mcpWrite(4000);
     delay(time);
@@ -375,4 +384,5 @@ void flash(int value, int time) {
     delay(200);
     x++;
   }
+  sei();
 }
