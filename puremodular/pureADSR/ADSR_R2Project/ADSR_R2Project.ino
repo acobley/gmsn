@@ -298,7 +298,7 @@ void loop() {
     ReleasePhase = true;
 
   }
-  if (TimedSustain == true) {
+  if ((TimedSustain == true) and (SustainPhase==true)){
     if (Time > SustainLength) {
       Time = 0;
       ReleasePhase = true;
