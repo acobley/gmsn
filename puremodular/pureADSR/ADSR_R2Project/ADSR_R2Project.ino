@@ -18,17 +18,16 @@
 
    This version by A.Cobley
    andy@r2-dvd.org
-   * 
+
    Branch 0.951
 */
 
 
 #include "SPI.h"
-#include <SoftwareSerial.h>
 #include <EEPROM.h>
 
 float enVal = 0;
-int aPot,dPot,sPot, rPot;
+int aPot, dPot, sPot, rPot;
 boolean gate = 0, rising = false;
 int buttonState, lastButtonState = HIGH, loopStage = 0, x = 0;
 long lastDebounceTime = 0, debounceDelay = 500;
@@ -41,15 +40,18 @@ int SW2 = 7;
 int DACCS = 10;
 
 boolean debug = false;
-double alpha=0.6; //attack coeff
-double delta=1.6; // decar coeff
-double rho=0.3;   //release coeff
+double alpha = 0.6; //attack coeff
+double delta = 1.6; // decar coeff
+double rho = 0.3; //release coeff
 
-int Time=0;
-boolean SustainPhase=false;
-int SustainLevel=0;
-boolean finished=false;
-boolean decaying=false;
+int Time = 0;
+boolean SustainPhase = false;
+int SustainLevel = 0;
+boolean finished = false;
+boolean decaying = false;
+boolean ReleasePhase = false;
+int SustainLength = 0; //Used for timed sustains.
+bool TimedSustain = false;
 
 struct coeffStruct {
   double alpha;
@@ -57,13 +59,13 @@ struct coeffStruct {
   double rho;
 };
 
-coeffStruct defaultcoeff ={
+coeffStruct defaultcoeff = {
   0.6d,
   1.6d,
   0.3
 };
 
- int eeAddress = 0; 
+int eeAddress = 0;
 
 void setup() {
   //DAC Comms
@@ -82,176 +84,210 @@ void setup() {
 
   //Interupts
   attachInterrupt(digitalPinToInterrupt(TRIGGER), gateOn, FALLING); //Actually on rising, the gate is inverted.
-    attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, FALLING); //Actually on rising, the gate is inverted.
-  if (debug ==true){
-     Serial.begin(9600); 
-  }
+  //attachInterrupt(digitalPinToInterrupt(BUTTONTRIGGER), SaveEEProm, FALLING); //Actually on rising, the gate is inverted.
+
   coeffStruct coeff;
-  EEPROM.get(eeAddress,coeff);  
+  EEPROM.get(eeAddress, coeff);
   if (isnan(coeff.alpha) )
-      EEPROM.put(eeAddress,defaultcoeff);
-  else{
-    alpha=coeff.alpha;
-    delta=coeff.delta;
-    rho=coeff.rho;    
+    EEPROM.put(eeAddress, defaultcoeff);
+  else {
+    alpha = coeff.alpha;
+    delta = coeff.delta;
+    rho = coeff.rho;
   }
 
 }
 
-void SaveEEProm(){
-  if (debug==true){
-    Serial.println("Save to EEprom");
-  }
-   coeffStruct coeff;
-   coeff.alpha=alpha;
-   coeff.delta=delta;
-   coeff.rho=rho;
-   EEPROM.put(eeAddress,coeff);
-   
+void SaveEEProm() {
+
+  coeffStruct coeff;
+  coeff.alpha = alpha;
+  coeff.delta = delta;
+  coeff.rho = rho;
+  EEPROM.put(eeAddress, coeff);
+
 }
-int ReadPort(int Port){
- 
-  int value= 512;
-   
-  //if (debug==false)
-   value=analogRead(Port);
-   
-   
+int ReadPort(int Port) {
+
+  int value = 512;
+
+
+  value = analogRead(Port);
+
+
   return value;
 }
-void getCoeff(){
-if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==false) ){
-      int value=map(analogRead(A3), 0, 1024, 1024, 0);
-      alpha=pow((double)value/(double)512,2);
-      value=map(analogRead(A2), 0, 1024, 1024, 0);
-      delta=pow((double)value/(double)512,2);
-      value=map(analogRead(A0), 0, 1024, 1024, 0);
-      rho=pow((double)value/(double)512,2);
-      if (debug==true){
-         //Serial.print("attack coeff");
-         //Serial.println(alpha);
-      }
-   }
-}
-int getAttack(int i){
+
+
+int OldAttackPot = -1;
+int getAttack(int i) {
   int Attackpot;
-  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Attackpot=ReadPort(A3)+1;
-      aPot=Attackpot;
-  }else{
-    Attackpot=aPot;
+  int readAttackpot = ReadPort(A3) + 1;
+  if (readAttackpot != OldAttackPot) {
+    if (digitalRead(BUTTON) == true) {
+      Attackpot = readAttackpot;
+      OldAttackPot = readAttackpot;
+    } else {
+      int value = map(analogRead(A2), 0, 1024, 1024, 0);
+      alpha = pow((double)value / (double)512, 2);
+      Attackpot = OldAttackPot;
+    }
+  } else {
+    Attackpot = OldAttackPot;
   }
-  double max=pow(Attackpot,alpha);
-  double y=pow(i,alpha);
-  double env=y/max;
-  return 4095*env;
-  
+  aPot = Attackpot;
+  double max = pow(Attackpot, alpha);
+  double y = pow(i, alpha);
+  double env = y / max;
+  return 4095 * env;
+
 }
 
-int getDecay(int i){
-  int Decaypot;
+int OldDecayPot = -1;
 
-  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Decaypot=ReadPort(A2)+1;
-      SustainLevel=4*ReadPort(A1);
-      dPot=Decaypot;
-      sPot=SustainLevel;
-  }else{
-    Decaypot=dPot;
-    SustainLevel=sPot;
+int getDecay(int i) {
+  int Decaypot;
+  int readDecaypot = ReadPort(A2) + 1;
+  SustainLevel = 4 * ReadPort(A1);
+  sPot=SustainLevel;
+  if (readDecaypot != OldDecayPot) {
+    
+    if (digitalRead(BUTTON) == true) {
+      Decaypot = readDecaypot;
+      OldDecayPot = readDecaypot;
+      
+    } else {
+      int value = map(analogRead(A2), 0, 1024, 1024, 0);
+      delta = pow((double)value / (double)512, 2);
+      Decaypot = OldDecayPot;
+      SustainLevel = sPot;
+    }
+  } else {
+    Decaypot = OldDecayPot;
+   
   }
-  double max=pow(Decaypot,delta);
-  double y=pow(i,delta);
-  double env=y/max;
-  int iEnv=4095-4095*env;
-  
-  if (iEnv <= SustainLevel){
-      iEnv=SustainLevel;
-      SustainPhase=true;
+  dPot = Decaypot;
+  double max = pow(Decaypot, delta);
+  double y = pow(i, delta);
+  double env = y / max;
+  int iEnv = 4095 - 4095 * env;
+
+  if (iEnv <= SustainLevel) {
+    iEnv = SustainLevel;
+    SustainPhase = true;
   }
   return iEnv;
-  
-}
 
-int getRelease(int i){
+}
+int OldReleasePot = -1;
+int getRelease(int i) {
+  /*
   int Releasepot;
 
-  if ((digitalRead(SW1) ==false) and (digitalRead(SW2) ==true) ){
-      Releasepot=ReadPort(A0)+1;
-      rPot=Releasepot;
-  }else{
-    Releasepot=rPot;
+  if ((digitalRead(SW1) == false) and (digitalRead(SW2) == true) ) {
+    Releasepot = ReadPort(A0) + 1;
+    rPot = Releasepot;
+  } else {
+    Releasepot = rPot;
   }
-  double max=pow(Releasepot,rho);
-  double y=pow(i,rho);
-  double env=y/max;
-  int iEnv=SustainLevel-4095*env;
-  
-  if (iEnv <= 0){
-      iEnv=0;
-      finished=true;
+  */
+  int Releasepot;
+  int readReleasepot = ReadPort(A0) + 1;
+  if (readReleasepot != OldReleasePot) {
+    if (digitalRead(BUTTON) == true) {
+      Releasepot = readReleasepot;
+      OldReleasePot = readReleasepot;
+    } else {
+      int value = map(analogRead(A0), 0, 1024, 1024, 0);
+      rho = pow((double)value / (double)512, 2);
+      Releasepot = OldReleasePot;
+    }
+  } else {
+    Releasepot = OldReleasePot;
+  }
+  dPot = Releasepot;
+  double max = pow(Releasepot, rho);
+  double y = pow(i, rho);
+  double env = y / max;
+  int iEnv = SustainLevel - 4095 * env;
+
+  if (iEnv <= 0) {
+    iEnv = 0;
+    finished = true;
 
   }
   return iEnv;
-  
+
 }
 
 
 
 
 void loop() {
-getCoeff();
-  if ((rising) and (digitalRead(GATEIN) == LOW)){ // Inverted
+  //getCoeff();
+  boolean GateIn = digitalRead(GATEIN);
+  if ((rising) and (GateIn == LOW)) { // Inverted
 
-    enVal=getAttack(Time);
+    enVal = getAttack(Time);
     Time++;
     if (enVal >= 4095) {
       enVal = 4095;
-      rising =false;
-      Time=0;
+      rising = false;
+      Time = 0;
     }
-     mcpWrite((int)enVal);
+    mcpWrite((int)enVal);
   }
-  if((rising) and (digitalRead(GATEIN) == HIGH)){ // Inverted
+  if ((rising) and (GateIn == HIGH)) { // Inverted
     //The button was released before attack ended
-    rising =false;
-    Time=0;
-    SustainPhase=false;
-    SustainLevel=enVal; //Make it the same as the last attack value;
+    rising = false;
+    Time = 0;
+    SustainPhase = false;
+    SustainLevel = enVal; //Make it the same as the last attack value;
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
-  if ((digitalRead(GATEIN) == LOW) and (rising==false)) { // Inverted
-     
-     if (SustainPhase==false){
-       enVal=getDecay(Time);
-       Time++;
-       decaying =true;
-       SustainLevel=enVal; // In case gate goes off before end of decay, release should start at current value 
-     }
-     else{
-       Time=0;
-       enVal=SustainLevel;
-       decaying=false;
-     }  
-     mcpWrite((int)enVal);  
+  if ((GateIn == LOW) and (rising == false)) { // Inverted
+
+    if (SustainPhase == false) {
+      enVal = getDecay(Time);
+      Time++;
+      decaying = true;
+      SustainLevel = enVal; // In case gate goes off before end of decay, release should start at current value
+    }
+    else {
+      Time = 0;
+      enVal = SustainLevel;
+      decaying = false;
+    }
+    mcpWrite((int)enVal);
   }
 
+  if ((GateIn == HIGH) && (TimedSustain == false)) {
+    ReleasePhase = true;
+
+  }
+  if (TimedSustain == true) {
+    if (Time > SustainLength) {
+      Time = 0;
+      ReleasePhase = true;
+    }
+  }
 
   // If no Gate, write release values
- if (digitalRead(GATEIN) == HIGH) {
-    if (decaying ==true){
-      Time=0;
-      decaying =false;
-      
+  if (ReleasePhase == true) {
+    if (decaying == true) {
+      Time = 0;
+      decaying = false;
+
     }
-    SustainPhase=false;
-    if (finished==false){
-       enVal=getRelease(Time);
-       Time++;
+    SustainPhase = false;
+    if (finished == false) {
+      enVal = getRelease(Time);
+      Time++;
     }
-    else 
-    { 
-      Time=0;
+    else
+    {
+      Time = 0;
+      ReleasePhase = false;
     }
     mcpWrite((int)enVal);
   }
@@ -264,13 +300,10 @@ void gateOn() {
   //flash (1, 200);
   enVal = 1;
   rising = true;
-  Time=0;
-  SustainPhase=false;
-  finished=false;
-  if (debug==true){
-     Serial.print("GateOn ");
-     Serial.println(rising);
-  }
+  Time = 0;
+  SustainPhase = false;
+  finished = false;
+
 }
 
 //Function for writing value to DAC. 0 = Off 4095 = Full on.
