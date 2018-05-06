@@ -139,17 +139,21 @@ int ReadPort(int Port) {
   return value;
 }
 
+int Diff(int A, int B){
+  int diff=A-B;
+  return (abs(diff));
+}
 
 int OldAttackPot = -1;
 int getAttack(int i) {
   int Attackpot;
   int readAttackpot = ReadPort(A3) + 1;
-  if (readAttackpot != OldAttackPot) {
+  if (Diff(readAttackpot,OldAttackPot)>5) {
     if (digitalRead(BUTTON) == true) {
       Attackpot = readAttackpot;
       OldAttackPot = readAttackpot;
     } else {
-      int value = map(analogRead(A2), 0, 1024, 1024, 0);
+      int value = map(analogRead(A3), 0, 1024, 1024, 0);
       alpha = pow((double)value / (double)512, 2);
       Attackpot = OldAttackPot;
     }
@@ -182,7 +186,7 @@ int getDecay(int i) {
        sPot = SustainLevel;
     }
   }
-  if (readDecaypot != OldDecayPot) {
+  if (Diff(readDecaypot,OldDecayPot)>5) {
 
     if (digitalRead(BUTTON) == true) {
       Decaypot = readDecaypot;
@@ -213,19 +217,10 @@ int getDecay(int i) {
 }
 int OldReleasePot = -1;
 int getRelease(int i) {
-  /*
-    int Releasepot;
 
-    if ((digitalRead(SW1) == false) and (digitalRead(SW2) == true) ) {
-    Releasepot = ReadPort(A0) + 1;
-    rPot = Releasepot;
-    } else {
-    Releasepot = rPot;
-    }
-  */
   int Releasepot;
   int readReleasepot = ReadPort(A0) + 1;
-  if (readReleasepot != OldReleasePot) {
+  if (Diff(readReleasepot,OldReleasePot)>5) {
     if (digitalRead(BUTTON) == true) {
       Releasepot = readReleasepot;
       OldReleasePot = readReleasepot;
