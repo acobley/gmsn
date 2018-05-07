@@ -3,25 +3,37 @@ This version Andy Cobley andy@r2-dvd.org
 
 This version calcuates the slopes differently, the math should allow the curve to be adjusted from exponential to linear to logrithmic.
 
-Interface
-
+*Interface*
 push and hold center Switch to change envelope curves.  Hold switch and move knob 
 
 NOTE
+TAG V1.0 First full feature relase
 TAG 0.951 Fixed release start from delay level 
 TAG 0.95  Save to EEPROM
 TAG 0.91  First Working release
 
-Branch b0.951 should match tag 0.951 (Sketch name may be wrong)
-Branch b0.955 In progress 1: Sustain time.  2: Repeat
-
-master branch is experimental
-
-To Be Completed
-Sustain does not yet work as a hold.
-Repeat mode does not work
 
 
-See: https://gmsn.co.uk/collections/pure-modular/products/gmsn-pure-adsr
+See: https://gmsn.co.uk/collections/pure-modular/products/gmsn-pure-adsr for original code and hardware
 
 In order to send the program to the Arduino see: https://learn.sparkfun.com/tutorials/pocket-avr-programmer-hookup-guide
+
+SA - Share & Adapt.
+   BY - Credit where credit is due.
+   For any purpose including Commercial and Group Buys.
+   No pressure to share design files.
+   R&D funded by donation.
+   https://gmsn.co.uk/products/r-d-funded-by-donations
+
+   Creative Commons License
+   Licensed under a Creative Commons Attribution 4.0 International License.
+   http://creativecommons.org/licenses/by/4.0/
+
+   Source from
+   https://gmsn.co.uk/products/gmsn-pure-adsr
+
+   original design and code from:
+   https://gmsn.co.uk/
+
+   This version by A.Cobley
+   andy@r2-dvd.org
