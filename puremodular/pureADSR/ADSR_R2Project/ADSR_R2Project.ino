@@ -299,7 +299,7 @@ int getRelease(int i) {
 }
 
 /*
- * Thebig loop which checks what state we are in
+ * The loop which checks what state we are in
  * This is a bit of a mess and could do with tidying up
  */
 
@@ -320,6 +320,7 @@ void loop() {
       Time = 0;
     }
     mcpWrite((int)enVal);
+    
   }
   if ((rising) and
       ((GateIn == LOW) and  (TimedSustain == false))
@@ -333,9 +334,9 @@ void loop() {
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if (((GateIn == HIGH) || (TimedSustain == true))
       and (rising == false) and (ReleasePhase == false) and (finished == false)) {
-
+    enVal = getDecay(Time);
     if (SustainPhase == false) {
-      enVal = getDecay(Time);
+      
       Time++;
       decaying = true;
       SustainLevel = enVal; // In case gate goes off before end of decay, release should start at current value
@@ -350,6 +351,7 @@ void loop() {
       decaying = false;
     }
     mcpWrite((int)enVal);
+    return;
   }
 
   if ((GateIn == LOW) && (TimedSustain == false)) {
@@ -403,6 +405,7 @@ void gateOn() {
   SustainPhase = false;
   finished = false;
   ReleasePhase = false;
+  
 
 }
 
