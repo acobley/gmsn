@@ -20,7 +20,8 @@
    andy@r2-dvd.org
 
    Branch V1.0
-   Merge to master ?
+   This version is feature complete, only bug fixes will be added on this branch as V1.0x
+   New Features will be in V1.x branches.
    
 */
 
@@ -66,7 +67,10 @@ int SustainLength = 0; //Used for timed sustains.
 bool TimedSustain = false;
 int mode = NORMAL;
 
-
+/*
+ * The Structs belwo are used to store the shape of the envleopes slope into EEEPROM
+ * This happens whenthe front switch is released from being pressed.
+ */
 struct coeffStruct {
   double alpha;
   double delta;
@@ -117,7 +121,7 @@ void setup() {
 
 void SaveEEProm() {
   //change this to use Update
-  flash(2,100);
+  //This may need a debounce !
   coeffStruct coeff;
   coeff.alpha = alpha;
   coeff.delta = delta;
@@ -127,7 +131,10 @@ void SaveEEProm() {
 
 }
 
-
+/*
+ * Get the mode from the fron toggle switch
+ * 
+ */
 int getMode() {
   if ((digitalRead(SW1) == false) and (digitalRead(SW2) == true) ) { //top Position
     mode = NORMAL;
@@ -143,16 +150,35 @@ int getMode() {
   }
 }
 
+
+/*
+ * A Convenience  to read an analogue port with a default calue 
+ * May not be needed now
+ */
 int ReadPort(int Port) {
   int value = 512;
   value = analogRead(Port);
   return value;
 }
 
+/*
+ * A Convenience  function to get the absolute difference between two numbers
+ * Reading the pots uses this a lot to see if they have actually moved or if there is noise
+ * in the system
+ */
 int Diff(int A, int B){
   int diff=A-B;
   return (abs(diff));
 }
+
+/*
+ * Read the current attack value
+ * All the functions for getting the pots are similar ADR.
+ * read the pot, if the difference is greater than 5 check to see if the button is pressed
+ * if it's pressed use the knob position to caclutale the slopw
+ * else caculate the time
+ * Finally use the variable i to calculate the current value of Y or the env value
+ */
 
 int OldAttackPot = -1;
 int getAttack(int i) {
@@ -178,6 +204,12 @@ int getAttack(int i) {
 
 }
 
+
+/*
+ * DEcay is simialr to Attack expcept deal with the sustain
+ * sustain behaves diffently if in timed mode, in that mode the Switch is pressed ot chaneg the level.
+ * Note also detecting the onset of the sustain phase happens here
+ */
 int OldDecayPot = -1;
 int OldSustainLevel=-1;
 int getDecay(int i) {
@@ -225,6 +257,12 @@ int getDecay(int i) {
   return iEnv;
 
 }
+
+
+/*
+ * Very similar to Attack, just note the value is subtraced from the systain level
+ * Need to check the mathson that, should it be suslevel-suslevel*env ?
+ */
 int OldReleasePot = -1;
 int getRelease(int i) {
 
@@ -257,7 +295,10 @@ int getRelease(int i) {
 
 }
 
-
+/*
+ * Thebig loop which checks what state we are in
+ * This is a bit of a mess and could do with tidying up
+ */
 
 
 void loop() {
@@ -346,8 +387,11 @@ void loop() {
   //delayMicroseconds(590);
 }
 
+/*
+ * Interrupt routine for rising edge of Gate
+ * Should reset everything to attack !
+ */
 
-//Interrupt routine for rising edge of Gate
 void gateOn() {
   //flash (1, 200);
   enVal = 1;
@@ -359,15 +403,20 @@ void gateOn() {
 
 }
 
-//Function for writing value to DAC. 0 = Off 4095 = Full on.
+
+/*
+ * Function for writing value to DAC. 0 = Off 4095 = Full on.
+ * NOTE this is for a single channel DAC
+ */
+
 
 void mcpWrite(int value) {
   //set top 4 bits of value integer to data variable
   byte data = value >> 8;
   data = data & B00001111;
   data = data | B00110000;
-  cli();
-  digitalWrite(DACCS, LOW);
+  cli();  //Stop interrupts, Is this really needed ?
+  digitalWrite(DACCS, LOW); //Chip Select
   SPI.transfer(data);
   data = value;
   SPI.transfer(data);
@@ -375,7 +424,13 @@ void mcpWrite(int value) {
   sei();
 }
 
-//Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
+
+/*
+ * Test function for flashing the led. Value = no of flashes, time = time between flashes in mS
+ * NOTE
+ * Stopes Interrupts so will interfear with timing if used !
+ */
+
 void flash(int value, int time) {
   int x = 0;
   cli();
