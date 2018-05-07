@@ -318,6 +318,7 @@ void loop() {
       enVal = 4095;
       rising = false;
       Time = 0;
+      decaying =true;
     }
     mcpWrite((int)enVal);
     
@@ -333,7 +334,9 @@ void loop() {
   }
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if (((GateIn == HIGH) || (TimedSustain == true))
-      and (rising == false) and (ReleasePhase == false) and (finished == false)) {
+      and (decaying==true)){
+      
+      //(rising == false) and (ReleasePhase == false) and (finished == false)) {
     enVal = getDecay(Time);
     if (SustainPhase == false) {
       
@@ -405,6 +408,7 @@ void gateOn() {
   SustainPhase = false;
   finished = false;
   ReleasePhase = false;
+  decaying=false;
   
 
 }
