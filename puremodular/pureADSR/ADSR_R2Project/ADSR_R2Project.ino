@@ -66,6 +66,8 @@ int SustainLevel = 0;
 boolean finished = false;
 boolean decaying = false;
 boolean ReleasePhase = false;
+boolean triggered=false;
+
 int SustainLength = 0; //Used for timed sustains.
 bool TimedSustain = false;
 int mode = NORMAL;
@@ -308,8 +310,10 @@ void loop() {
   getMode();
 
   boolean GateIn = !digitalRead(GATEIN);
-  if ((rising) and
+  if ((rising) 
+   /*and
       ((GateIn == HIGH) || (TimedSustain == true))
+      */
      ) {
 
     enVal = getAttack(Time);
@@ -322,16 +326,16 @@ void loop() {
     }
     mcpWrite((int)enVal);
     
-  }
-  if ((rising) and
-      ((GateIn == LOW) and  (TimedSustain == false))
-     ) {
+  
+      if ((GateIn == LOW) and  (TimedSustain == false) and 
+      (enVal >100)){
     //The gate was released before attack ended
     rising = false;
     Time = 0;
     SustainPhase = false;
     SustainLevel = enVal; //Make it the same as the last attack value;
   }
+     }
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if (((GateIn == HIGH) || (TimedSustain == true))
       and (decaying==true)){
