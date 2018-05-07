@@ -19,9 +19,12 @@
    This version by A.Cobley
    andy@r2-dvd.org
 
-   Branch V1.0
+   Branch bV1.01
    This version is feature complete, only bug fixes will be added on this branch as V1.0x
    New Features will be in V1.x branches.
+
+   Change List:
+   7/5/2018  Removed interrupt protection on ADC write for testing
    
 */
 
@@ -63,6 +66,8 @@ int SustainLevel = 0;
 boolean finished = false;
 boolean decaying = false;
 boolean ReleasePhase = false;
+boolean triggered=false;
+
 int SustainLength = 0; //Used for timed sustains.
 bool TimedSustain = false;
 int mode = NORMAL;
@@ -296,7 +301,7 @@ int getRelease(int i) {
 }
 
 /*
- * Thebig loop which checks what state we are in
+ * The loop which checks what state we are in
  * This is a bit of a mess and could do with tidying up
  */
 
@@ -305,8 +310,10 @@ void loop() {
   getMode();
 
   boolean GateIn = !digitalRead(GATEIN);
-  if ((rising) and
+  if ((rising) 
+   /*and
       ((GateIn == HIGH) || (TimedSustain == true))
+      */
      ) {
 
     enVal = getAttack(Time);
@@ -315,24 +322,28 @@ void loop() {
       enVal = 4095;
       rising = false;
       Time = 0;
+      decaying =true;
     }
     mcpWrite((int)enVal);
-  }
-  if ((rising) and
-      ((GateIn == LOW) and  (TimedSustain == false))
-     ) {
+    
+  
+      if ((GateIn == LOW) and  (TimedSustain == false) and 
+      (enVal >100)){
     //The gate was released before attack ended
     rising = false;
     Time = 0;
     SustainPhase = false;
     SustainLevel = enVal; //Make it the same as the last attack value;
   }
+     }
   //Check if Gate is On and not rising.  In decay/sustain phase;
   if (((GateIn == HIGH) || (TimedSustain == true))
-      and (rising == false) and (ReleasePhase == false) and (finished == false)) {
-
+      and (decaying==true)){
+      
+      //(rising == false) and (ReleasePhase == false) and (finished == false)) {
+    enVal = getDecay(Time);
     if (SustainPhase == false) {
-      enVal = getDecay(Time);
+      
       Time++;
       decaying = true;
       SustainLevel = enVal; // In case gate goes off before end of decay, release should start at current value
@@ -347,6 +358,7 @@ void loop() {
       decaying = false;
     }
     mcpWrite((int)enVal);
+    return;
   }
 
   if ((GateIn == LOW) && (TimedSustain == false)) {
@@ -400,6 +412,8 @@ void gateOn() {
   SustainPhase = false;
   finished = false;
   ReleasePhase = false;
+  decaying=false;
+  
 
 }
 
@@ -415,13 +429,13 @@ void mcpWrite(int value) {
   byte data = value >> 8;
   data = data & B00001111;
   data = data | B00110000;
-  cli();  //Stop interrupts, Is this really needed ?
+  //cli();  //Stop interrupts, Is this really needed ?
   digitalWrite(DACCS, LOW); //Chip Select
   SPI.transfer(data);
   data = value;
   SPI.transfer(data);
   digitalWrite(DACCS, HIGH);
-  sei();
+  //sei();
 }
 
 
