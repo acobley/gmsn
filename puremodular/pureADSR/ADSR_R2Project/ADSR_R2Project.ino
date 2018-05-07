@@ -19,9 +19,12 @@
    This version by A.Cobley
    andy@r2-dvd.org
 
-   Branch V1.0
+   Branch bV1.01
    This version is feature complete, only bug fixes will be added on this branch as V1.0x
    New Features will be in V1.x branches.
+
+   Change List:
+   7/5/2018  Removed interrupt protection on ADC write for testing
    
 */
 
@@ -415,13 +418,13 @@ void mcpWrite(int value) {
   byte data = value >> 8;
   data = data & B00001111;
   data = data | B00110000;
-  cli();  //Stop interrupts, Is this really needed ?
+  //cli();  //Stop interrupts, Is this really needed ?
   digitalWrite(DACCS, LOW); //Chip Select
   SPI.transfer(data);
   data = value;
   SPI.transfer(data);
   digitalWrite(DACCS, HIGH);
-  sei();
+  //sei();
 }
 
 
