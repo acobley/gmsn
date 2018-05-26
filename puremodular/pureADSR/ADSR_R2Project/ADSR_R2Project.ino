@@ -236,7 +236,7 @@ int getDecay(int i) {
   if (Diff(readDecaypot,OldDecayPot)>5) {
 
     if (digitalRead(BUTTON) == true) {
-      Decaypot = readDecaypot;
+      Decaypot = 30*readDecaypot;
       OldDecayPot = readDecaypot;
 
     } else {
@@ -272,7 +272,7 @@ int OldReleasePot = -1;
 int getRelease(int i) {
 
   int Releasepot;
-  int readReleasepot = ReadPort(A0) + 1;
+  int readReleasepot = 30*ReadPort(A0) + 1;
   if (Diff(readReleasepot,OldReleasePot)>5) {
     if (digitalRead(BUTTON) == true) {
       Releasepot = readReleasepot;
